@@ -2,7 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+//import { useRouter } from "next/navigation";
 import CustomLayout from "~~/components/CustomLayout";
 import PersistentDownArrow from "~~/components/PersistentDownArrow";
 import DemoSection from "~~/components/sections/DemoSection";
@@ -11,7 +12,7 @@ import HowItWorksSection from "~~/components/sections/HowItWorks";
 
 export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const router = useRouter();
+  //  const router = useRouter();
 
   useEffect(() => {
     const playVideo = () => {
@@ -66,18 +67,18 @@ export default function Home() {
 
             {/* Buttons with Glassmorphic Effects */}
             <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
-              <a 
+              <Link
                 href="/sign-up"
                 className="bg-blue-600/90 hover:bg-blue-700/90 backdrop-blur-sm text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 drop-shadow-lg border border-blue-400/30 text-center"
               >
                 Get Started &rarr;
-              </a>
-              <a 
+              </Link>
+              <Link
                 href="/sign-in"
                 className="bg-gray-800/80 hover:bg-gray-900/80 backdrop-blur-sm text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 drop-shadow-lg border border-gray-400/20 text-center"
               >
                 Sign In &gt;
-              </a>
+              </Link>
             </div>
           </div>
         </div>

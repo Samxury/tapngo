@@ -1,25 +1,25 @@
-import { useState, useEffect, useCallback } from 'react';
-import { pricingService, ConversionRate, PriceData } from '~~/services/pricingService';
+import { useCallback, useEffect, useState } from "react";
+import { ConversionRate, PriceData, pricingService } from "~~/services/pricingService";
 
 export interface UsePricingReturn {
   // Current rate data
   currentRate: ConversionRate | null;
   rateAge: number;
   isRateStale: boolean;
-  
+
   // Conversion functions
   convertGhsToUsdc: (ghsAmount: number) => number;
   convertUsdcToGhs: (usdcAmount: number) => number;
-  
+
   // Formatting functions
   formatGhsPrice: (amount: number) => string;
   formatUsdcPrice: (amount: number) => string;
   formatPrice: (amount: number, currency: string, decimals?: number) => string;
-  
+
   // Actions
   forceUpdate: () => Promise<void>;
   refreshRate: () => Promise<void>;
-  
+
   // Status
   loading: boolean;
   error: string | null;
@@ -38,34 +38,34 @@ export const usePricing = (): UsePricingReturn => {
       try {
         setLoading(true);
         setError(null);
-        
+
         // Get initial rate
         const initialRate = pricingService.getCurrentRate();
         if (initialRate) {
           setCurrentRate(initialRate);
           setLastUpdated(initialRate.timestamp);
         }
-        
+
         // Subscribe to rate updates
-        const unsubscribe = pricingService.subscribe((rate) => {
+        const unsubscribe = pricingService.subscribe(rate => {
           setCurrentRate(rate);
           setLastUpdated(rate.timestamp);
           setError(null);
         });
-        
+
         setLoading(false);
-        
+
         // Cleanup subscription on unmount
         return unsubscribe;
       } catch (err) {
-        setError('Failed to initialize pricing service');
+        setError("Failed to initialize pricing service");
         setLoading(false);
-        console.error('Pricing initialization error:', err);
+        console.error("Pricing initialization error:", err);
       }
     };
 
     const cleanup = initializePricing();
-    
+
     return () => {
       cleanup?.then(unsubscribe => unsubscribe?.());
     };
@@ -100,8 +100,8 @@ export const usePricing = (): UsePricingReturn => {
       setError(null);
       await pricingService.forceUpdate();
     } catch (err) {
-      setError('Failed to update pricing');
-      console.error('Force update error:', err);
+      setError("Failed to update pricing");
+      console.error("Force update error:", err);
     } finally {
       setLoading(false);
     }
@@ -112,8 +112,8 @@ export const usePricing = (): UsePricingReturn => {
       setError(null);
       await pricingService.forceUpdate();
     } catch (err) {
-      setError('Failed to refresh rate');
-      console.error('Refresh rate error:', err);
+      setError("Failed to refresh rate");
+      console.error("Refresh rate error:", err);
     }
   }, []);
 
@@ -126,20 +126,20 @@ export const usePricing = (): UsePricingReturn => {
     currentRate,
     rateAge,
     isRateStale,
-    
+
     // Conversion functions
     convertGhsToUsdc,
     convertUsdcToGhs,
-    
+
     // Formatting functions
     formatGhsPrice,
     formatUsdcPrice,
     formatPrice,
-    
+
     // Actions
     forceUpdate,
     refreshRate,
-    
+
     // Status
     loading,
     error,
@@ -150,9 +150,9 @@ export const usePricing = (): UsePricingReturn => {
 // Hook for price display with automatic updates
 export const usePriceDisplay = (ghsAmount: number) => {
   const { convertGhsToUsdc, formatGhsPrice, formatUsdcPrice, currentRate, isRateStale } = usePricing();
-  
+
   const usdcAmount = convertGhsToUsdc(ghsAmount);
-  
+
   return {
     ghsFormatted: formatGhsPrice(ghsAmount),
     usdcFormatted: formatUsdcPrice(usdcAmount),
@@ -165,14 +165,14 @@ export const usePriceDisplay = (ghsAmount: number) => {
 // Hook for real-time price conversion
 export const usePriceConverter = () => {
   const { convertGhsToUsdc, convertUsdcToGhs, currentRate, loading, error } = usePricing();
-  
+
   const [ghsAmount, setGhsAmount] = useState<number>(0);
   const [usdcAmount, setUsdcAmount] = useState<number>(0);
-  const [activeInput, setActiveInput] = useState<'ghs' | 'usdc'>('ghs');
+  const [activeInput, setActiveInput] = useState<"ghs" | "usdc">("ghs");
 
   // Update USDC when GHS changes
   useEffect(() => {
-    if (activeInput === 'ghs' && currentRate) {
+    if (activeInput === "ghs" && currentRate) {
       const converted = convertGhsToUsdc(ghsAmount);
       setUsdcAmount(converted);
     }
@@ -180,7 +180,7 @@ export const usePriceConverter = () => {
 
   // Update GHS when USDC changes
   useEffect(() => {
-    if (activeInput === 'usdc' && currentRate) {
+    if (activeInput === "usdc" && currentRate) {
       const converted = convertUsdcToGhs(usdcAmount);
       setGhsAmount(converted);
     }
@@ -188,12 +188,12 @@ export const usePriceConverter = () => {
 
   const updateGhsAmount = (amount: number) => {
     setGhsAmount(amount);
-    setActiveInput('ghs');
+    setActiveInput("ghs");
   };
 
   const updateUsdcAmount = (amount: number) => {
     setUsdcAmount(amount);
-    setActiveInput('usdc');
+    setActiveInput("usdc");
   };
 
   return {
@@ -220,9 +220,9 @@ export const usePriceHistory = () => {
         setPriceHistory(history);
         setLoading(false);
       } catch (err) {
-        setError('Failed to load price history');
+        setError("Failed to load price history");
         setLoading(false);
-        console.error('Price history error:', err);
+        console.error("Price history error:", err);
       }
     };
 

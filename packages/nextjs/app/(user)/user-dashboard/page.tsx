@@ -3,29 +3,23 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRightIcon } from "@heroicons/react/20/solid";
-import { useUser } from '@clerk/nextjs';
+import PriceDisplay, { PriceTicker } from "~~/components/PriceDisplay";
+import { WalletConnection } from "~~/components/WalletConnection";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-eth/useScaffoldReadContract";
+import { usePricing } from "~~/hooks/usePricing";
 import { useUserData } from "~~/hooks/useUserData";
 import { useWalletUser } from "~~/hooks/useWalletUser";
-import { WalletConnection } from "~~/components/WalletConnection";
-import { usePricing } from "~~/hooks/usePricing";
-import PriceDisplay, { PriceTicker } from "~~/components/PriceDisplay";
 
 const PayWithTapNgo = () => {
   const router = useRouter();
-  const { user, isLoaded } = useUser();
   const { transactions, loading: userDataLoading } = useUserData();
   const { walletAddress, isWalletLinked } = useWalletUser();
   const { convertUsdcToGhs, formatGhsPrice } = usePricing();
 
-  // Get user's USDC balance from the smart contract using wallet address
-  const { data: usdcBalance } = useScaffoldReadContract({
-    contractName: "bUSDC",
-    functionName: "balanceOf",
-    args: [walletAddress || "0x0"],
-  });
+  // Mock USDC balance - replace with actual contract call when bUSDC is deployed
+  const mockUsdcBalance = 1000000; // 1 USDC in wei (6 decimals)
 
-  if (!isLoaded || userDataLoading) {
+  if (userDataLoading) {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
@@ -33,23 +27,18 @@ const PayWithTapNgo = () => {
     );
   }
 
-  if (!user) {
-    router.push('/sign-in');
-    return null;
-  }
-
   const paymentOptions = [
     {
       icon: "qr",
       title: "Scan QR Code",
-      description: "Scan merchant&apos;s QR to pay",
+      description: "Scan merchant's QR to pay",
       color: "bg-blue-500",
       onClick: () => router.push("/payment"),
     },
     {
       icon: "tap",
       title: "Tap to Pay",
-      description: "Hold near merchant&apos;s device",
+      description: "Hold near merchant's device",
       color: "bg-purple-500",
       onClick: () => router.push("/accept-payment"),
     },
@@ -124,11 +113,11 @@ const PayWithTapNgo = () => {
       case "receive":
         return <span className="text-white text-lg">↓</span>;
       case "ens":
-        return <span className="text-white text-lg">🌐</span>;
+        return <span className="text-white text-lg">��</span>;
       case "setup":
         return <span className="text-white text-lg">⚙</span>;
       case "profile":
-        return <span className="text-white text-lg">👤</span>;
+        return <span className="text-white text-lg">��</span>;
       case "vendor":
         return <span className="text-white text-lg">🏪</span>;
       default:
@@ -153,8 +142,8 @@ const PayWithTapNgo = () => {
         <div className="p-4 space-y-4">
           {/* Payment Options */}
           {paymentOptions.map((option, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className="bg-white rounded-2xl p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
               onClick={option.onClick}
             >
@@ -176,18 +165,7 @@ const PayWithTapNgo = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm mb-1">Your Balance</p>
-                {usdcBalance ? (
-                  <PriceDisplay 
-                    ghsAmount={convertUsdcToGhs(Number(usdcBalance) / 1e6)}
-                    showRate={false}
-                    size="lg"
-                  />
-                ) : (
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">₵0.00</p>
-                    <p className="text-gray-500 text-sm">~ $0.00 USDC</p>
-                  </div>
-                )}
+                <PriceDisplay ghsAmount={convertUsdcToGhs(mockUsdcBalance / 1e6)} showRate={false} size="lg" />
               </div>
               <button className="bg-blue-600 text-white font-medium py-3 px-6 rounded-xl text-sm hover:bg-blue-700 transition-colors">
                 Add Funds
@@ -195,64 +173,53 @@ const PayWithTapNgo = () => {
             </div>
           </div>
 
-            {/* Wallet Connection */}
-            <div className="bg-white rounded-3xl p-8 shadow-lg mb-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Wallet Connection</h3>
-              <WalletConnection />
-              {!isWalletLinked && (
-                <p className="text-sm text-gray-500 mt-2">
-                  Connect and link your wallet to access Web3 features
-                </p>
-              )}
-            </div>
+          {/* Wallet Connection */}
+          <div className="bg-white rounded-3xl p-8 shadow-lg mb-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Wallet Connection</h3>
+            <WalletConnection />
+            {!isWalletLinked && (
+              <p className="text-sm text-gray-500 mt-2">Connect and link your wallet to access Web3 features</p>
+            )}
+          </div>
 
-            {/* Recent Transactions */}
-            <div className="bg-white rounded-3xl p-8 shadow-lg">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">Recent Activity</h3>
-              <div className="space-y-4">
-                {transactions.length > 0 ? (
-                  transactions.slice(0, 3).map((transaction) => (
-                    <div key={transaction.id} className="flex items-center space-x-4 py-2">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <span className="text-green-600 text-sm font-bold">
-                          {transaction.vendorEns ? transaction.vendorEns.charAt(0).toUpperCase() : 'T'}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">
-                          {transaction.vendorEns || 'Transaction'}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {new Date(transaction.createdAt).toLocaleString()}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-900">
-                          -₵{transaction.amountGHS.toFixed(2)}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          -{transaction.amountUSDC.toFixed(2)} USDC
-                        </p>
-                      </div>
+          {/* Recent Transactions */}
+          <div className="bg-white rounded-3xl p-8 shadow-lg">
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">Recent Activity</h3>
+            <div className="space-y-4">
+              {transactions.length > 0 ? (
+                transactions.slice(0, 3).map(transaction => (
+                  <div key={transaction.id} className="flex items-center space-x-4 py-2">
+                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                      <span className="text-green-600 text-sm font-bold">
+                        {transaction.vendorEns ? transaction.vendorEns.charAt(0).toUpperCase() : "T"}
+                      </span>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500">No transactions yet</p>
-                    <p className="text-sm text-gray-400 mt-1">Start making payments to see your history</p>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{transaction.vendorEns || "Transaction"}</p>
+                      <p className="text-sm text-gray-500">{new Date(transaction.createdAt).toLocaleString()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-gray-900">-₵{transaction.amountGHS.toFixed(2)}</p>
+                      <p className="text-sm text-gray-500">-{transaction.amountUSDC.toFixed(2)} USDC</p>
+                    </div>
                   </div>
-                )}
-              </div>
-
-              {transactions.length > 0 && (
-                <button 
-                  onClick={() => router.push('/transaction-history')}
-                  className="w-full text-blue-600 font-medium py-2 mt-4 hover:text-blue-700 transition-colors"
-                >
-                  View All Transactions
-                </button>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No transactions yet</p>
+                  <p className="text-sm text-gray-400 mt-1">Start making payments to see your history</p>
+                </div>
               )}
             </div>
+
+            {transactions.length > 0 && (
+              <button
+                onClick={() => router.push("/transaction-history")}
+                className="w-full text-blue-600 font-medium py-2 mt-4 hover:text-blue-700 transition-colors"
+              >
+                View All Transactions
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -323,19 +290,12 @@ const PayWithTapNgo = () => {
                 <div className="bg-white rounded-3xl p-8 shadow-lg">
                   <h3 className="text-xl font-semibold text-gray-900 mb-6">Your Balance</h3>
                   <div className="text-center mb-6">
-                    {usdcBalance ? (
-                      <PriceDisplay 
-                        ghsAmount={convertUsdcToGhs(Number(usdcBalance) / 1e6)}
-                        showRate={true}
-                        size="lg"
-                        className="text-center"
-                      />
-                    ) : (
-                      <div>
-                        <div className="text-4xl font-bold text-gray-900 mb-2">₵0.00</div>
-                        <div className="text-gray-500 text-lg">~ $0.00 USDC</div>
-                      </div>
-                    )}
+                    <PriceDisplay
+                      ghsAmount={convertUsdcToGhs(mockUsdcBalance / 1e6)}
+                      showRate={true}
+                      size="lg"
+                      className="text-center"
+                    />
                   </div>
 
                   <div className="space-y-3">
@@ -353,9 +313,7 @@ const PayWithTapNgo = () => {
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">Wallet Connection</h3>
                   <WalletConnection />
                   {!isWalletLinked && (
-                    <p className="text-sm text-gray-500 mt-2">
-                      Connect and link your wallet to access Web3 features
-                    </p>
+                    <p className="text-sm text-gray-500 mt-2">Connect and link your wallet to access Web3 features</p>
                   )}
                 </div>
 
@@ -363,53 +321,40 @@ const PayWithTapNgo = () => {
                 <div className="bg-white rounded-3xl p-8 shadow-lg">
                   <h3 className="text-xl font-semibold text-gray-900 mb-6">Recent Activity</h3>
                   <div className="space-y-4">
-                    <div className="flex items-center space-x-4 py-2">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <span className="text-green-600 text-sm font-bold">A</span>
+                    {transactions.length > 0 ? (
+                      transactions.slice(0, 3).map(transaction => (
+                        <div key={transaction.id} className="flex items-center space-x-4 py-2">
+                          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <span className="text-green-600 text-sm font-bold">
+                              {transaction.vendorEns ? transaction.vendorEns.charAt(0).toUpperCase() : "T"}
+                            </span>
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900">{transaction.vendorEns || "Transaction"}</p>
+                            <p className="text-sm text-gray-500">{new Date(transaction.createdAt).toLocaleString()}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-gray-900">-₵{transaction.amountGHS.toFixed(2)}</p>
+                            <p className="text-sm text-gray-500">-{transaction.amountUSDC.toFixed(2)} USDC</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">No transactions yet</p>
+                        <p className="text-sm text-gray-400 mt-1">Start making payments to see your history</p>
                       </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">Ama&apos;s Waakye</p>
-                        <p className="text-sm text-gray-500">2 mins ago</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-900">₵25.00</p>
-                        <p className="text-sm text-gray-500">$1.53 USDC</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-4 py-2">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 text-sm font-bold">K</span>
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">Kofi&apos;s Kenkey</p>
-                        <p className="text-sm text-gray-500">15 mins ago</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-900">₵45.00</p>
-                        <p className="text-sm text-gray-500">$2.76 USDC</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-4 py-2">
-                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                        <span className="text-purple-600 text-sm font-bold">Y</span>
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">Yaa&apos;s Banku</p>
-                        <p className="text-sm text-gray-500">1 hour ago</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-900">₵30.00</p>
-                        <p className="text-sm text-gray-500">$1.84 USDC</p>
-                      </div>
-                    </div>
+                    )}
                   </div>
 
-                  <button 
-                    onClick={() => router.push('/transaction-history')}
-                    className="w-full text-blue-600 font-medium py-2 mt-4 hover:text-blue-700 transition-colors"
-                  >
-                    View All Transactions
-                  </button>
+                  {transactions.length > 0 && (
+                    <button
+                      onClick={() => router.push("/transaction-history")}
+                      className="w-full text-blue-600 font-medium py-2 mt-4 hover:text-blue-700 transition-colors"
+                    >
+                      View All Transactions
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
